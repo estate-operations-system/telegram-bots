@@ -8,8 +8,7 @@ const api = axios.create({
 export async function findOrCreateUser(
   telegramUser: { id:number; username?: string; first_name?: string; last_name?: string}
 ): Promise<BackendUser> {
-  console.log(telegramUser.username, telegramUser.first_name, telegramUser.last_name)
-  console.log((telegramUser.first_name || '') + (telegramUser.last_name || ''));
+
   try {
     const res = await api.post('/api/users', {
       name: ((telegramUser.first_name || '') + (telegramUser.last_name || '')) || 'Telegram User',
