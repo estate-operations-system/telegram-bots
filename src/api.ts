@@ -6,14 +6,14 @@ const api = axios.create({
 });
 
 export async function findOrCreateUser(
-  telegramUser: { id: number; first_name?: string }
+  telegramUser: { id:number; username?: string; first_name?: string; last_name?: string}
 ): Promise<BackendUser> {
-  const email = `${telegramUser.id}@telegram.local`;
-
+  console.log(telegramUser.username, telegramUser.first_name, telegramUser.last_name)
+  console.log((telegramUser.first_name || '') + (telegramUser.last_name || ''));
   try {
     const res = await api.post('/api/users', {
-      name: telegramUser.first_name || 'Telegram User',
-      email,
+      name: ((telegramUser.first_name || '') + (telegramUser.last_name || '')) || 'Telegram User',
+      email: telegramUser.username,
       age: null
     });
 
@@ -21,7 +21,7 @@ export async function findOrCreateUser(
   } catch (err: any) {
     if (err.response && err.response.status === 409) {
       const res = await api.get('/api/users');
-      const existingUser = res.data.data.find((u: BackendUser) => u.email === email);
+      const existingUser = res.data.data.find((u: BackendUser) => u.email === telegramUser.username);
       if (existingUser) return existingUser;
     }
 

@@ -41,7 +41,7 @@ bot.on('message', async (msg: Message) => {
 
   const session = sessions[chatId];
 
-  if (text === '📝 Создать заявку') {
+  if (text === 'Создать заявку') {
     session.state = STATES.CATEGORY;
     return bot.sendMessage(chatId, 'Введите категорию заявки:');
   }
@@ -60,7 +60,7 @@ bot.on('message', async (msg: Message) => {
 
   if (session.state === STATES.PHOTO) {
     session.ticket.address = 'Дом 1, кв 1';
-
+    console.log(msg);
     const user = await findOrCreateUser(msg.from!);
 
     const ticket = await createTicket({
