@@ -6,24 +6,40 @@ const api = axios.create({
 });
 
 export async function findOrCreateUser(
-  telegramUser: { id:number; username?: string; first_name?: string; last_name?: string}
+  telegramUser: {
+    id: number;
+    username?: string;
+    first_name?: string;
+    last_name?: string;
+    password: string;
+  }
 ): Promise<BackendUser> {
 
-  try {
-    const res = await api.post('/api/users', {
-      name: ((telegramUser.first_name || '') + (telegramUser.last_name || '')) || 'Telegram User',
-      email: telegramUser.username,
-      age: null
-    });
+  const existing = await getUserByTelegramId(telegramUser.id);
+  if (existing) return existing;
 
+  const res = await api.post('/api/users', {
+    name:
+      `${telegramUser.first_name ?? 'Telegram'} ${telegramUser.last_name ?? 'User'}`.trim()
+      || 'Telegram User',
+    telegram_id: telegramUser.id,
+    telegram_username: telegramUser.username,
+    password: telegramUser.password
+  });
+
+  return res.data.data;
+}
+
+export async function getUserByTelegramId(
+  telegramId: number
+): Promise<BackendUser | null> {
+  try {
+    const res = await api.get(`/api/users/by-telegram/${telegramId}`);
     return res.data.data;
   } catch (err: any) {
-    if (err.response && err.response.status === 409) {
-      const res = await api.get('/api/users');
-      const existingUser = res.data.data.find((u: BackendUser) => u.email === telegramUser.username);
-      if (existingUser) return existingUser;
+    if (err.response?.status === 404) {
+      return null;
     }
-
     throw err;
   }
 }
