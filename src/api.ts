@@ -37,9 +37,6 @@ export async function getUserByTelegramId(
     const res = await api.get(`/api/users/by-telegram/${telegramId}`);
     return res.data.data;
   } catch (err: any) {
-    if (err.response?.status === 404) {
-      return;
-    }
     throw err;  
   }
 }
