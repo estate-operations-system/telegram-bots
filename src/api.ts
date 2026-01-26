@@ -32,15 +32,15 @@ export async function findOrCreateUser(
 
 export async function getUserByTelegramId(
   telegramId: number
-): Promise<BackendUser | null> {
+): Promise<BackendUser | undefined> {
   try {
     const res = await api.get(`/api/users/by-telegram/${telegramId}`);
     return res.data.data;
   } catch (err: any) {
     if (err.response?.status === 404) {
-      return null;
+      return;
     }
-    throw err;
+    throw err;  
   }
 }
 
