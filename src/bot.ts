@@ -2,7 +2,7 @@ import 'dotenv/config';
 import TelegramBot, { Message } from 'node-telegram-bot-api';
 import { STATES } from './states';
 import { Session } from './types';
-import { findOrCreateUser, createTicket } from './api';
+import { findOrCreateUser, createTicket, getUserByTelegramId } from './api';
 
 const token = process.env.BOT_TOKEN;
 if (!token) {
@@ -15,15 +15,30 @@ const sessions: Record<number, Session> = {};
 
 bot.onText(/\/start/, async (msg: Message) => {
   const chatId = msg.chat.id;
+  const telegramId = msg.from!.id;
 
   sessions[chatId] = {
-    state: STATES.NONE,
+    state: STATES.PASSWORD,
     ticket: {}
   };
 
-  await bot.sendMessage(
+  const existingUser = await getUserByTelegramId(telegramId);
+
+  sessions[chatId] = {
+    state: existingUser ? STATES.NONE : STATES.PASSWORD,
+    ticket: {}
+  };
+
+  if (!existingUser) {
+    return bot.sendMessage(
+      chatId,
+      'Добро пожаловать \n\nПридумайте пароль для регистрации:'
+    );
+  }
+
+  return bot.sendMessage(
     chatId,
-    'Добро пожаловать \n\nНажмите кнопку ниже, чтобы создать заявку.',
+    'С возвращением \n\nНажмите кнопку ниже, чтобы создать заявку.',
     {
       reply_markup: {
         keyboard: [[{ text: 'Создать заявку' }]],
@@ -41,7 +56,28 @@ bot.on('message', async (msg: Message) => {
 
   const session = sessions[chatId];
 
-  if (text === '📝 Создать заявку') {
+  if (session.state === STATES.PASSWORD) {
+    await findOrCreateUser({
+      ...msg.from!,
+      password: text
+    });
+
+    session.state = STATES.NONE;
+
+    return bot.sendMessage(
+      chatId,
+      'Регистрация завершена\n\nТеперь вы можете создавать заявки.',
+      {
+        reply_markup: {
+          keyboard: [[{ text: 'Создать заявку' }]],
+          resize_keyboard: true
+        }
+      }
+    );
+  }
+
+  // TODO(ipigin): add category to tickets
+  if (text === 'Создать заявку') {
     session.state = STATES.CATEGORY;
     return bot.sendMessage(chatId, 'Введите категорию заявки:');
   }
@@ -60,8 +96,13 @@ bot.on('message', async (msg: Message) => {
 
   if (session.state === STATES.PHOTO) {
     session.ticket.address = 'Дом 1, кв 1';
+    
+    const user = await getUserByTelegramId(msg.from!.id);
 
-    const user = await findOrCreateUser(msg.from!);
+    if (!user) {
+      session.state = STATES.PASSWORD;
+      return bot.sendMessage(chatId, 'Пожалуйста, зарегистрируйтесь.');
+    }
 
     const ticket = await createTicket({
       category: session.ticket.category!,

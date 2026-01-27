@@ -5,8 +5,14 @@ export interface TicketDraft {
 }
 
 export interface Session {
-  state: string;
-  ticket: TicketDraft;
+  state: STATES;
+  ticket: {
+    category?: string;
+    description?: string;
+    address?: string;
+  };
+  password?: string;
+  userId?: number;
 }
 
 export interface BackendUser {
