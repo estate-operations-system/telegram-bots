@@ -34,7 +34,7 @@ export async function getUserByTelegramId(
   telegramId: number
 ): Promise<BackendUser | undefined> {
   try {
-    const res = await api.get(`/api/users/by-telegram/${telegramId}`);
+    const res = await api.get(`/api/users/telegram/${telegramId}`);
     return res.data.data;
   } catch (err: any) {
     if (err.response?.status === 404) {
