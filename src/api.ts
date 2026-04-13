@@ -2,7 +2,10 @@ import axios from 'axios';
 import { BackendUser, TicketDraft } from './types';
 
 const api = axios.create({
-  baseURL: process.env.BACKEND_URL
+  baseURL: process.env.BACKEND_URL,
+  headers: {
+    'x-bot-token': process.env.BOT_TOKEN
+  }
 });
 
 export async function findOrCreateUser(
@@ -48,6 +51,7 @@ export async function createTicket(data: {
   category: string;
   description: string;
   address: string;
+  status: string;
   resident_id: number;
 }) {
   const res = await api.post('/api/tickets', data);
