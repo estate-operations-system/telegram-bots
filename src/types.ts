@@ -1,3 +1,5 @@
+import { STATES } from "./states";
+
 export interface TicketDraft {
   category?: string;
   description?: string;
@@ -10,6 +12,7 @@ export interface Session {
     category?: string;
     description?: string;
     address?: string;
+    status?: string;
   };
   password?: string;
   userId?: number;

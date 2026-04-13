@@ -96,6 +96,7 @@ bot.on('message', async (msg: Message) => {
 
   if (session.state === STATES.PHOTO) {
     session.ticket.address = 'Дом 1, кв 1';
+    session.ticket.status = 'Новая';
     
     const user = await getUserByTelegramId(msg.from!.id);
 
@@ -108,6 +109,7 @@ bot.on('message', async (msg: Message) => {
       category: session.ticket.category!,
       description: session.ticket.description!,
       address: session.ticket.address!,
+      status: session.ticket.status,
       resident_id: user.id
     });
 
