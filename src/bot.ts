@@ -2,7 +2,15 @@ import 'dotenv/config';
 import TelegramBot, { Message } from 'node-telegram-bot-api';
 import { STATES } from './states';
 import { Session } from './types';
-import { findOrCreateUser, createTicket, getUserByTelegramId } from './api';
+import {
+  findOrCreateUser,
+  createTicket,
+  getUserByTelegramId,
+  getMyTickets,
+  getAllTickets,
+  updateTicketStatus,
+  getDashboardStats,
+} from './api';
 
 const token = process.env.BOT_TOKEN;
 if (!token) {
@@ -18,34 +26,31 @@ bot.onText(/\/start/, async (msg: Message) => {
   const telegramId = msg.from!.id;
 
   sessions[chatId] = {
-    state: STATES.PASSWORD,
-    ticket: {}
+    state: STATES.NONE,
+    ticket: {},
   };
 
-  const existingUser = await getUserByTelegramId(telegramId);
+  let user = await getUserByTelegramId(telegramId);
 
-  sessions[chatId] = {
-    state: existingUser ? STATES.NONE : STATES.PASSWORD,
-    ticket: {}
-  };
-
-  if (!existingUser) {
-    return bot.sendMessage(
-      chatId,
-      'Добро пожаловать \n\nПридумайте пароль для регистрации:'
-    );
+  if (!user) {
+    user = await findOrCreateUser(msg.from!);
   }
 
-  return bot.sendMessage(
-    chatId,
-    'С возвращением \n\nНажмите кнопку ниже, чтобы создать заявку.',
-    {
-      reply_markup: {
-        keyboard: [[{ text: 'Создать заявку' }]],
-        resize_keyboard: true
-      }
-    }
-  );
+  const keyboard = [
+    [{ text: 'Создать заявку' }, { text: 'Мои заявки' }],
+    [{ text: 'Дешборд' }, { text: 'Профиль' }],
+  ];
+
+  if (user.role === 'администратор') {
+    keyboard.push([{ text: 'Админ панель' }]);
+  }
+
+  return bot.sendMessage(chatId, 'Добро пожаловать! \n\nВыберите действие.', {
+    reply_markup: {
+      keyboard,
+      resize_keyboard: true,
+    },
+  });
 });
 
 bot.on('message', async (msg: Message) => {
@@ -56,30 +61,61 @@ bot.on('message', async (msg: Message) => {
 
   const session = sessions[chatId];
 
-  if (session.state === STATES.PASSWORD) {
-    await findOrCreateUser({
-      ...msg.from!,
-      password: text
-    });
-
-    session.state = STATES.NONE;
-
-    return bot.sendMessage(
-      chatId,
-      'Регистрация завершена\n\nТеперь вы можете создавать заявки.',
-      {
-        reply_markup: {
-          keyboard: [[{ text: 'Создать заявку' }]],
-          resize_keyboard: true
-        }
-      }
-    );
-  }
-
   // TODO(ipigin): add category to tickets
   if (text === 'Создать заявку') {
     session.state = STATES.CATEGORY;
     return bot.sendMessage(chatId, 'Введите категорию заявки:');
+  }
+
+  if (text === 'Мои заявки') {
+    const user = await getUserByTelegramId(msg.from!.id);
+    if (!user) return bot.sendMessage(chatId, 'Пользователь не найден.');
+
+    const tickets = await getMyTickets(user.id);
+    if (tickets.length === 0) {
+      return bot.sendMessage(chatId, 'У вас нет заявок.');
+    }
+
+    const message = tickets.map((t) => `№${t.id}: ${t.category} - ${t.status}`).join('\n');
+    const inlineKeyboard = tickets.map((t) => [
+      { text: `Закрыть №${t.id}`, callback_data: `close_${t.id}` },
+    ]);
+
+    return bot.sendMessage(chatId, `Ваши заявки:\n${message}`, {
+      reply_markup: { inline_keyboard: inlineKeyboard },
+    });
+  }
+
+  if (text === 'Дешборд') {
+    const stats = await getDashboardStats();
+    return bot.sendMessage(
+      chatId,
+      `Дешборд:\nВсего заявок: ${stats.total}\nВ работе: ${stats.inProgress}`
+    );
+  }
+
+  if (text === 'Профиль') {
+    const user = await getUserByTelegramId(msg.from!.id);
+    if (!user) return bot.sendMessage(chatId, 'Пользователь не найден.');
+    return bot.sendMessage(
+      chatId,
+      `Профиль:\nИмя: ${user.name}\nEmail: ${user.email}\nРоль: ${user.role || 'жилец'}`
+    );
+  }
+
+  if (text === 'Админ панель') {
+    const user = await getUserByTelegramId(msg.from!.id);
+    if (user?.role !== 'администратор') return bot.sendMessage(chatId, 'Доступ запрещен.');
+
+    const tickets = await getAllTickets();
+    const message = tickets.map((t) => `№${t.id}: ${t.category} - ${t.status}`).join('\n');
+    const inlineKeyboard = tickets.map((t) => [
+      { text: `Изменить №${t.id}`, callback_data: `admin_update_${t.id}` },
+    ]);
+
+    return bot.sendMessage(chatId, `Все заявки:\n${message}`, {
+      reply_markup: { inline_keyboard: inlineKeyboard },
+    });
   }
 
   if (session.state === STATES.CATEGORY) {
@@ -97,12 +133,12 @@ bot.on('message', async (msg: Message) => {
   if (session.state === STATES.PHOTO) {
     session.ticket.address = 'Дом 1, кв 1';
     session.ticket.status = 'Новая';
-    
+
     const user = await getUserByTelegramId(msg.from!.id);
 
     if (!user) {
-      session.state = STATES.PASSWORD;
-      return bot.sendMessage(chatId, 'Пожалуйста, зарегистрируйтесь.');
+      session.state = STATES.NONE;
+      return bot.sendMessage(chatId, 'Ошибка: пользователь не найден.');
     }
 
     const ticket = await createTicket({
@@ -110,15 +146,42 @@ bot.on('message', async (msg: Message) => {
       description: session.ticket.description!,
       address: session.ticket.address!,
       status: session.ticket.status,
-      resident_id: user.id
+      resident_id: user.id,
     });
 
     session.state = STATES.NONE;
 
-    return bot.sendMessage(
-      chatId,
-      `Заявка создана!\n\n№ ${ticket.id}\nСтатус: ${ticket.status}`
-    );
+    return bot.sendMessage(chatId, `Заявка создана!\n\n№ ${ticket.id}\nСтатус: ${ticket.status}`);
+  }
+
+  if (session.state === STATES.ADMIN_UPDATE_STATUS) {
+    const ticketId = session.selectedTicketId!;
+    await updateTicketStatus(ticketId, text);
+    session.state = STATES.NONE;
+    return bot.sendMessage(chatId, `Статус заявки №${ticketId} изменен на ${text}.`);
+  }
+});
+
+bot.on('callback_query', async (query) => {
+  const chatId = query.message!.chat.id;
+  const data = query.data!;
+
+  if (data.startsWith('close_')) {
+    const ticketId = parseInt(data.split('_')[2]);
+    await updateTicketStatus(ticketId, 'Закрыта');
+    return bot.sendMessage(chatId, `Заявка №${ticketId} закрыта.`);
+  }
+
+  if (data.startsWith('admin_update_')) {
+    const ticketId = parseInt(data.split('_')[2]);
+    console.log('data', data);
+    console.log('Selected ticket for admin update:', ticketId);
+    sessions[chatId] = {
+      ...sessions[chatId],
+      state: STATES.ADMIN_UPDATE_STATUS,
+      selectedTicketId: ticketId,
+    };
+    return bot.sendMessage(chatId, 'Введите новый статус для заявки:');
   }
 });
 
