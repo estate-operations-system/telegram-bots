@@ -167,15 +167,13 @@ bot.on('callback_query', async (query) => {
   const data = query.data!;
 
   if (data.startsWith('close_')) {
-    const ticketId = parseInt(data.split('_')[2]);
+    const ticketId = parseInt(data.split('_')[1]);
     await updateTicketStatus(ticketId, 'Закрыта');
     return bot.sendMessage(chatId, `Заявка №${ticketId} закрыта.`);
   }
 
   if (data.startsWith('admin_update_')) {
     const ticketId = parseInt(data.split('_')[2]);
-    console.log('data', data);
-    console.log('Selected ticket for admin update:', ticketId);
     sessions[chatId] = {
       ...sessions[chatId],
       state: STATES.ADMIN_UPDATE_STATUS,
