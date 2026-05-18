@@ -52,7 +52,7 @@ export async function createTicket(data: {
 }
 
 export async function getMyTickets(userId: number): Promise<Ticket[]> {
-  const res = await api.get(`/api/tickets?resident_id=${userId}`);
+  const res = await api.get(`/api/tickets/resident/${userId}`);
   return res.data.data;
 }
 
