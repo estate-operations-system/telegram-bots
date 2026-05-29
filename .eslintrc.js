@@ -13,6 +13,7 @@ module.exports = {
     es6: true,
   },
   rules: {
-    // Add custom rules here
+    '@typescript-eslint/no-explicit-any': 'off',
+    '@typescript-eslint/ban-types' : 'off',
   },
 };

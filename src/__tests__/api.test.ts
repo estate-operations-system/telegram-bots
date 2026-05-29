@@ -66,7 +66,9 @@ describe('api module', () => {
 
   it('findOrCreateUser creates a new user when none exists', async () => {
     const newUser = { id: 3, name: 'Telegram User', email: 'new@example.com', role: null };
-    mockApi.get.mockRejectedValue(Object.assign(new Error('Not found'), { isAxiosError: true, response: { status: 404 } }));
+    mockApi.get.mockRejectedValue(
+      Object.assign(new Error('Not found'), { isAxiosError: true, response: { status: 404 } })
+    );
     mockApi.post.mockResolvedValue({ data: { data: newUser } });
 
     const result = await api.findOrCreateUser({ id: 12, first_name: 'John', last_name: 'Doe' });
@@ -80,10 +82,23 @@ describe('api module', () => {
   });
 
   it('createTicket posts ticket data and returns created ticket', async () => {
-    const ticket = { id: 5, category: 'test', description: 'x', address: 'y', status: 'Новая', resident_id: 1 };
+    const ticket = {
+      id: 5,
+      category: 'test',
+      description: 'x',
+      address: 'y',
+      status: 'Новая',
+      resident_id: 1,
+    };
     mockApi.post.mockResolvedValue({ data: { data: ticket } });
 
-    const result = await api.createTicket({ category: 'test', description: 'x', address: 'y', status: 'Новая', resident_id: 1 });
+    const result = await api.createTicket({
+      category: 'test',
+      description: 'x',
+      address: 'y',
+      status: 'Новая',
+      resident_id: 1,
+    });
 
     expect(mockApi.post).toHaveBeenCalledWith('/api/tickets', {
       category: 'test',
@@ -96,7 +111,17 @@ describe('api module', () => {
   });
 
   it('getMyTickets returns ticket list', async () => {
-    const tickets = [{ id: 1, category: 'a', description: '', address: '', status: 'Новая', resident_id: 3, created_at: '' }];
+    const tickets = [
+      {
+        id: 1,
+        category: 'a',
+        description: '',
+        address: '',
+        status: 'Новая',
+        resident_id: 3,
+        created_at: '',
+      },
+    ];
     mockApi.get.mockResolvedValue({ data: { data: tickets } });
 
     const result = await api.getMyTickets(3);
@@ -106,7 +131,17 @@ describe('api module', () => {
   });
 
   it('getAllTickets returns all tickets', async () => {
-    const tickets = [{ id: 1, category: 'a', description: '', address: '', status: 'Новая', resident_id: 3, created_at: '' }];
+    const tickets = [
+      {
+        id: 1,
+        category: 'a',
+        description: '',
+        address: '',
+        status: 'Новая',
+        resident_id: 3,
+        created_at: '',
+      },
+    ];
     mockApi.get.mockResolvedValue({ data: { data: tickets } });
 
     const result = await api.getAllTickets();
@@ -116,7 +151,15 @@ describe('api module', () => {
   });
 
   it('updateTicketStatus updates ticket status', async () => {
-    const ticket = { id: 9, category: 'x', description: '', address: '', status: 'В работе', resident_id: 1, created_at: '' };
+    const ticket = {
+      id: 9,
+      category: 'x',
+      description: '',
+      address: '',
+      status: 'В работе',
+      resident_id: 1,
+      created_at: '',
+    };
     mockApi.put.mockResolvedValue({ data: { data: ticket } });
 
     const result = await api.updateTicketStatus(9, 'В работе');

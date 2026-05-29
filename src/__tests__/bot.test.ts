@@ -53,7 +53,11 @@ describe('Telegram bot flow', () => {
   }
 
   it('starts bot and registers handlers', () => {
-    const { mockOnText: onTextHandlers, mockOn: onHandlers, MockTelegramBot: BotConstructor } = loadBot();
+    const {
+      mockOnText: onTextHandlers,
+      mockOn: onHandlers,
+      MockTelegramBot: BotConstructor,
+    } = loadBot();
 
     expect(BotConstructor).toHaveBeenCalledWith('test-token', { polling: true });
     expect(onTextHandlers.length).toBeGreaterThanOrEqual(1);
@@ -61,19 +65,33 @@ describe('Telegram bot flow', () => {
   });
 
   it('handle /start with existing user and shows welcome keyboard', async () => {
-    mockApi.getUserByTelegramId.mockResolvedValue({ id: 77, name: 'Ivan', email: 'ivan@example.com', role: null });
+    mockApi.getUserByTelegramId.mockResolvedValue({
+      id: 77,
+      name: 'Ivan',
+      email: 'ivan@example.com',
+      role: null,
+    });
     loadBot();
     const startHandler = mockOnText.find((handler) => handler.regex.source === '\\/start')!.cb;
     const msg = { chat: { id: 1 }, from: { id: 77, first_name: 'Ivan', last_name: 'Ivanov' } };
 
     await startHandler(msg);
 
-    expect(mockSendMessage).toHaveBeenCalledWith(1, expect.stringContaining('Добро пожаловать'), expect.any(Object));
+    expect(mockSendMessage).toHaveBeenCalledWith(
+      1,
+      expect.stringContaining('Добро пожаловать'),
+      expect.any(Object)
+    );
   });
 
   it('handle /start and creates user when missing', async () => {
     mockApi.getUserByTelegramId.mockResolvedValue(undefined);
-    mockApi.findOrCreateUser.mockResolvedValue({ id: 77, name: 'Ivan', email: 'ivan@example.com', role: null });
+    mockApi.findOrCreateUser.mockResolvedValue({
+      id: 77,
+      name: 'Ivan',
+      email: 'ivan@example.com',
+      role: null,
+    });
     loadBot();
     const startHandler = mockOnText.find((handler) => handler.regex.source === '\\/start')!.cb;
     const msg = { chat: { id: 2 }, from: { id: 77, first_name: 'Ivan', last_name: 'Ivanov' } };
@@ -81,16 +99,29 @@ describe('Telegram bot flow', () => {
     await startHandler(msg);
 
     expect(mockApi.findOrCreateUser).toHaveBeenCalledWith(msg.from);
-    expect(mockSendMessage).toHaveBeenCalledWith(2, expect.stringContaining('Добро пожаловать'), expect.any(Object));
+    expect(mockSendMessage).toHaveBeenCalledWith(
+      2,
+      expect.stringContaining('Добро пожаловать'),
+      expect.any(Object)
+    );
   });
 
   it('shows empty tickets message when user has no tickets', async () => {
-    mockApi.getUserByTelegramId.mockResolvedValue({ id: 77, name: 'Ivan', email: 'ivan@example.com', role: null });
+    mockApi.getUserByTelegramId.mockResolvedValue({
+      id: 77,
+      name: 'Ivan',
+      email: 'ivan@example.com',
+      role: null,
+    });
     mockApi.getMyTickets.mockResolvedValue([]);
     loadBot();
     const startHandler = mockOnText.find((handler) => handler.regex.source === '\\/start')!.cb;
     const messageHandler = mockOn.find((handler) => handler.event === 'message')!.cb;
-    const msg = { chat: { id: 3 }, from: { id: 77, first_name: 'Ivan', last_name: 'Ivanov' }, text: '/start' };
+    const msg = {
+      chat: { id: 3 },
+      from: { id: 77, first_name: 'Ivan', last_name: 'Ivanov' },
+      text: '/start',
+    };
 
     await startHandler(msg);
     await messageHandler({ chat: { id: 3 }, from: { id: 77 }, text: 'Мои заявки' });
@@ -100,11 +131,20 @@ describe('Telegram bot flow', () => {
 
   it('shows dashboard stats', async () => {
     mockApi.getDashboardStats.mockResolvedValue({ total: 10, inProgress: 2 });
-    mockApi.getUserByTelegramId.mockResolvedValue({ id: 77, name: 'Ivan', email: 'ivan@example.com', role: 'жилец' });
+    mockApi.getUserByTelegramId.mockResolvedValue({
+      id: 77,
+      name: 'Ivan',
+      email: 'ivan@example.com',
+      role: 'жилец',
+    });
     loadBot();
     const startHandler = mockOnText.find((handler) => handler.regex.source === '\\/start')!.cb;
     const messageHandler = mockOn.find((handler) => handler.event === 'message')!.cb;
-    const msg = { chat: { id: 4 }, from: { id: 77, first_name: 'Ivan', last_name: 'Ivanov' }, text: '/start' };
+    const msg = {
+      chat: { id: 4 },
+      from: { id: 77, first_name: 'Ivan', last_name: 'Ivanov' },
+      text: '/start',
+    };
 
     await startHandler(msg);
     await messageHandler({ chat: { id: 4 }, from: { id: 77 }, text: 'Дешборд' });
@@ -114,14 +154,25 @@ describe('Telegram bot flow', () => {
 
   it('creates ticket flow from category to photo', async () => {
     const user = { id: 77, name: 'Ivan', email: 'ivan@example.com', role: null };
-    const ticket = { id: 18, category: 'ЖКХ', description: 'Проблема', address: 'Дом 1, кв 1', status: 'Новая', resident_id: 77 };
+    const ticket = {
+      id: 18,
+      category: 'ЖКХ',
+      description: 'Проблема',
+      address: 'Дом 1, кв 1',
+      status: 'Новая',
+      resident_id: 77,
+    };
     mockApi.getUserByTelegramId.mockResolvedValue(user);
     mockApi.createTicket.mockResolvedValue(ticket);
     loadBot();
 
     const startHandler = mockOnText.find((handler) => handler.regex.source === '\\/start')!.cb;
     const messageHandler = mockOn.find((handler) => handler.event === 'message')!.cb;
-    const msg = { chat: { id: 5 }, from: { id: 77, first_name: 'Ivan', last_name: 'Ivanov' }, text: '/start' };
+    const msg = {
+      chat: { id: 5 },
+      from: { id: 77, first_name: 'Ivan', last_name: 'Ivanov' },
+      text: '/start',
+    };
 
     await startHandler(msg);
     await messageHandler({ chat: { id: 5 }, from: { id: 77 }, text: 'Создать заявку' });
@@ -153,7 +204,9 @@ describe('Telegram bot flow', () => {
   it('handles callback_query admin_update action', async () => {
     loadBot();
     const callbackHandler = mockOn.find((handler) => handler.event === 'callback_query')!.cb;
-    mockOnText.find((handler) => handler.regex.source === '\\/start')!.cb({ chat: { id: 7 }, from: { id: 8, first_name: 'Ivan', last_name: 'Ivanov' } });
+    mockOnText
+      .find((handler) => handler.regex.source === '\\/start')!
+      .cb({ chat: { id: 7 }, from: { id: 8, first_name: 'Ivan', last_name: 'Ivanov' } });
     mockSendMessage.mockClear();
 
     await callbackHandler({ message: { chat: { id: 7 } }, data: 'admin_update_7' });
