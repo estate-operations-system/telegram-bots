@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 
-let mockApi: {
-  get: jest.Mock;
-  post: jest.Mock;
-  put: jest.Mock;
+let mockApi = {
+  get: jest.fn<any>(),
+  post: jest.fn<any>(),
+  put: jest.fn<any>(),
 };
 
 let api: typeof import('../api');
