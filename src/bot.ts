@@ -61,7 +61,6 @@ bot.on('message', async (msg: Message) => {
 
   const session = sessions[chatId];
 
-  // TODO(ipigin): add category to tickets
   if (text === 'Создать заявку') {
     session.state = STATES.CATEGORY;
     return bot.sendMessage(chatId, 'Введите категорию заявки:');
