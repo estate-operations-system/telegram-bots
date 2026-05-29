@@ -211,7 +211,7 @@ describe('Telegram bot flow', () => {
 
     await callbackHandler({ message: { chat: { id: 7 } }, data: 'admin_update_7' });
 
-    expect(mockSendMessage).toHaveBeenCalledTimes(1);
+    expect(mockSendMessage).toHaveBeenCalledTimes(2);
     expect(mockSendMessage).toHaveBeenCalledWith(7, 'Введите новый статус для заявки:');
   });
 });
